@@ -1,0 +1,45 @@
+name: Temporary NVIDIA Research Data Collection
+
+on:
+  push:
+    branches:
+      - research-data-runner-20261021
+    paths:
+      - "research-data-runner/**"
+      - ".github/workflows/tmp-nvidia-research-data.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install requests
+        run: python -m pip install --quiet requests
+
+      - name: Collect NVIDIA GitHub research data
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DATA_OUT: data-out
+        run: python research-data-runner/collect_nvidia_inference_research_data.py
+
+      - name: Upload dataset artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nvidia-ai-inference-support-data-20261021
+          path: data-out/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
